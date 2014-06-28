@@ -23,7 +23,7 @@ class Transcoder extends AbstractBinary
      * Transcode a PDF to an image.
      *
      * @param string $input          The path to the input file.
-     * @param string $destinationThe path to the output file.
+     * @param string $destination    The path to the output file.
      *
      * @return Transcoder
      *
@@ -49,6 +49,46 @@ class Transcoder extends AbstractBinary
         }
 
         return $this;
+    }
+
+    /**
+     * Transcode multiple PDFs into a single PDF
+     *
+     * @param array $input
+     * @param $destination
+     *
+     * @throws RuntimeException
+     * @return Transcoder
+     */
+    public function concatenatePDFs(array $input, $destination)
+    {
+        foreach ($input as $inputFile) {
+            if (!file_exists($destination)) {
+                throw new RuntimeException(
+                    sprintf(
+                        'Unable to locate input file: "%s". Ghostscript was unable to transcode to concatenated PDF.',
+                        $inputFile
+                    )
+                );
+            }
+        }
+
+        try {
+            $this->command(array(
+                '-dBatch',
+                '-dNOPAUSE',
+                '-q',
+                '-sDEVICE=pdfwrite',
+                '-sOutputFile=' . $destination,
+                implode(' ', $input)
+            ));
+        } catch (ExecutionFailureException $e) {
+            throw new RuntimeException('Ghostscript was unable to transcode to concatenated PDF.', $e->getCode(), $e);
+        }
+
+        if (!file_exists($destination)) {
+            throw new RuntimeException('Ghostscript was unable to transcode to concatenated PDF.');
+        }
     }
 
     /**
