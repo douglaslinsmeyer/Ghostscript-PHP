@@ -63,7 +63,7 @@ class Transcoder extends AbstractBinary
     public function concatenatePDFs(array $input, $destination)
     {
         foreach ($input as $inputFile) {
-            if (!file_exists($destination)) {
+            if (!file_exists($inputFile)) {
                 throw new RuntimeException(
                     sprintf(
                         'Unable to locate input file: "%s". Ghostscript was unable to transcode to concatenated PDF.',
@@ -73,15 +73,16 @@ class Transcoder extends AbstractBinary
             }
         }
 
+        $commandComponents = array(
+            '-dBatch',
+            '-dNOPAUSE',
+            '-q',
+            '-sDEVICE=pdfwrite',
+            '-sOutputFile=' . $destination,
+        );
+
         try {
-            $this->command(array(
-                '-dBatch',
-                '-dNOPAUSE',
-                '-q',
-                '-sDEVICE=pdfwrite',
-                '-sOutputFile=' . $destination,
-                implode(' ', $input)
-            ));
+            $this->command(array_merge($commandComponents, $input));
         } catch (ExecutionFailureException $e) {
             throw new RuntimeException('Ghostscript was unable to transcode to concatenated PDF.', $e->getCode(), $e);
         }
